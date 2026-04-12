@@ -1,0 +1,27 @@
+[project]
+name = "tally"
+version = "0.1.0"
+description = "A little program to analyze RPG dice combinations"
+authors = [
+    {name = "Maarten Oosten"}
+]
+license = "MIT"
+requires-python = ">=3.14"
+dependencies = [
+    "typer (>=0.24.1,<0.25.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "mypy (>=1.20.0,<2.0.0)",
+    "pytest (>=9.0.2,<10.0.0)",
+    "ruff (>=0.15.9,<0.16.0)"
+]
+
+[tool.poetry.scripts]
+tally = 'tally.cli:app'
