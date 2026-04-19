@@ -1,10 +1,15 @@
 from abc import ABC, abstractmethod
+from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import Enum, auto
 
 from tally.compare import compare_sums, ComparisonDistribution
 from tally.probabilities import probabilities, accumulate_ge
-from tally.render import render_sum_probabilities, render_comparison_probabilities
+from tally.render import (
+    render_sum_probabilities,
+    render_comparison_probabilities,
+    render_average,
+)
 from tally.int_distribution import IntDistribution, create_int_distribution
 
 
@@ -25,16 +30,30 @@ INT_OPERATOR = {
 }
 
 
+def accumulate_if(
+    cumulative: bool, distribution: Mapping[int, int]
+) -> Mapping[int, int]:
+    return accumulate_ge(distribution) if cumulative else distribution
+
+
 @dataclass(frozen=True)
 class Expression(ABC):
     @abstractmethod
-    def render(self) -> str: ...
+    def render(self, cumulative: bool) -> str: ...
 
 
 @dataclass(frozen=True)
 class ComparableExpression(Expression, ABC):
     @abstractmethod
     def compute(self) -> IntDistribution: ...
+
+    def render(self, cumulative: bool) -> str:
+        base = self.compute()
+
+        probs = probabilities(accumulate_if(cumulative, base.d), cumulative)
+        average = base.average()
+
+        return render_sum_probabilities(probs.items()) + render_average(average)
 
 
 @dataclass(frozen=True)
@@ -50,11 +69,6 @@ class SumDice(ComparableExpression):
     def compute(self) -> IntDistribution:
         return create_int_distribution(self.dice.number, self.dice.sides, int.__add__)
 
-    def render(self) -> str:
-        return render_sum_probabilities(
-            probabilities(accumulate_ge(self.compute().d)).items()
-        )
-
 
 @dataclass(frozen=True)
 class Modifier(ComparableExpression):
@@ -62,11 +76,6 @@ class Modifier(ComparableExpression):
 
     def compute(self) -> IntDistribution:
         return IntDistribution.constant(self.constant)
-
-    def render(self) -> str:
-        return render_sum_probabilities(
-            probabilities(accumulate_ge(self.compute().d)).items()
-        )
 
 
 @dataclass(frozen=True)
@@ -76,11 +85,6 @@ class MaxDice(ComparableExpression):
     def compute(self) -> IntDistribution:
         return create_int_distribution(self.dice.number, self.dice.sides, max)
 
-    def render(self) -> str:
-        return render_sum_probabilities(
-            probabilities(accumulate_ge(self.compute().d)).items()
-        )
-
 
 @dataclass(frozen=True)
 class MinDice(ComparableExpression):
@@ -88,9 +92,6 @@ class MinDice(ComparableExpression):
 
     def compute(self) -> IntDistribution:
         return create_int_distribution(self.dice.number, self.dice.sides, min)
-
-    def render(self) -> str:
-        return render_sum_probabilities(probabilities(self.compute().d).items())
 
 
 @dataclass(frozen=True)
@@ -100,9 +101,6 @@ class SumExpression(ComparableExpression):
 
     def compute(self) -> IntDistribution:
         return self.lhs.compute() + self.rhs.compute()
-
-    def render(self) -> str:
-        return render_sum_probabilities(probabilities(self.compute().d).items())
 
 
 @dataclass(frozen=True)
@@ -118,6 +116,6 @@ class Comparison(Expression):
             INT_OPERATOR[self.comparator],
         )
 
-    def render(self) -> str:
+    def render(self, cumulative: bool) -> str:
         result = self.compute()
         return render_comparison_probabilities(result.wins, result.losses)

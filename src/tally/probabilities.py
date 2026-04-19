@@ -2,8 +2,13 @@ from collections.abc import Mapping
 from itertools import product
 
 
-def probabilities(distribution: Mapping[int, int]) -> Mapping[int, float]:
-    total = sum(distribution.values())
+def probabilities(
+    distribution: Mapping[int, int], cumulative: bool
+) -> Mapping[int, float]:
+    if cumulative:
+        total = max(distribution.values())
+    else:
+        total = sum(distribution.values())
 
     return {k: v / total for k, v in distribution.items()} or {0: 1.0}
 

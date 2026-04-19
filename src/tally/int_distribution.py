@@ -1,7 +1,7 @@
 from collections.abc import Mapping, Reversible, Callable
 from dataclasses import dataclass
 from functools import cache
-from itertools import product
+from itertools import product, starmap
 from typing import KeysView
 
 
@@ -37,6 +37,9 @@ class IntDistribution:
 
     def __add__(self, other: IntDistribution) -> IntDistribution:
         return self.commutative_combine(other, int.__add__)
+
+    def average(self) -> float:
+        return sum(starmap(int.__mul__, self.d.items())) / sum(self.d.values())
 
 
 @cache

@@ -39,6 +39,10 @@ def render_sum_probabilities(probabilities: Collection[tuple[object, float]]) ->
     return text
 
 
+def render_average(average: float) -> str:
+    return f"On average: {average}"
+
+
 def render_comparison_probabilities(wins: int, losses: int) -> str:
     total = wins + losses
 
